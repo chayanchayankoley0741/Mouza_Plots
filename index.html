@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mouza Plot Locator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+    .leaflet-control-locate {
+      background: white;
+      padding: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <button onclick="locateMe()" 
+          style="position:absolute;top:10px;left:10px;z-index:1000;padding:6px 12px;">
+    📍 Locate Me
+  </button>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
+  <script>
+    let map = L.map('map').setView([22.9, 87.7], 14); // Center near your mouza
+
+    // Base map
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let geojsonLayer;
+    let userMarker, userCircle;
+
+    // Load your GeoJSON file
+    fetch("mouza_plots.geojson")
+      .then(res => res.json())
+      .then(data => {
+        geojsonLayer = L.geoJSON(data, {
+          style: {
+            color: "black",
+            weight: 1,
+            fillColor: "lightyellow",
+            fillOpacity: 0.5
+          },
+          onEachFeature: function (feature, layer) {
+            if (feature.properties && feature.properties.plot_no) {
+              layer.bindPopup("Plot No: " + feature.properties.plot_no);
+            }
+          }
+        }).addTo(map);
+
+        map.fitBounds(geojsonLayer.getBounds());
+      });
+
+    // Locate function
+    function locateMe() {
+      map.locate({
+        setView: true,
+        maxZoom: 18,
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
+    }
+
+    // When location found
+    map.on('locationfound', function(e) {
+      if (userMarker) {
+        map.removeLayer(userMarker);
+        map.removeLayer(userCircle);
+      }
+
+      userMarker = L.marker(e.latlng).addTo(map);
+      userCircle = L.circle(e.latlng, { radius: e.accuracy }).addTo(map);
+
+      // Check which polygon contains the point
+      if (geojsonLayer) {
+        let point = turf.point([e.latlng.lng, e.latlng.lat]);
+        geojsonLayer.eachLayer(function(layer) {
+          let poly = layer.toGeoJSON();
+          if (turf.booleanPointInPolygon(point, poly)) {
+            alert("✅ You are in Plot No: " + poly.properties.plot_no);
+            layer.setStyle({ fillColor: "lightgreen" });
+          }
+        });
+      }
+    });
+
+    // When location error
+    map.on('locationerror', function(e) {
+      alert("⚠️ Location detection failed: " + e.message);
+    });
+  </script>
+</body>
+</html>
