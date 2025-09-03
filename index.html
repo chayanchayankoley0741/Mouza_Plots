@@ -27,7 +27,9 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
   <script>
-    let map = L.map('map').setView([22.9, 87.7], 14); // Center near your mouza
+    //let map = L.map('map').setView([22.9, 87.7], 14); // Center near your mouza
+    var map =L.map('map',{center:[22.9,87.7],zoom: 13, minZoom: 10, maxZoom: 22 });
+    
 
     // Base map
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -99,3 +101,4 @@
   </script>
 </body>
 </html>
+
